@@ -6,9 +6,28 @@ export interface Settings {
   redirectEnabled: boolean;
 }
 
+const resolveProductionApiBase = (): string => {
+  const hostname = window.location.hostname;
+
+  // Support split Vercel projects such as `<name>-frontend.vercel.app`
+  // where the backend is deployed at `<name>.vercel.app`.
+  if (hostname.endsWith("-frontend.vercel.app")) {
+    return `https://${hostname.replace("-frontend.vercel.app", ".vercel.app")}`;
+  }
+
+  return window.location.origin;
+};
+
+const configuredBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const isLocalhostBase =
+  configuredBase?.startsWith("http://localhost") || configuredBase?.startsWith("https://localhost");
+
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? "http://localhost:4000" : "");
+  configuredBase && !(import.meta.env.PROD && isLocalhostBase)
+    ? configuredBase
+    : import.meta.env.DEV
+      ? "http://localhost:4000"
+      : resolveProductionApiBase();
 
 const makeUrl = (path: string) => `${API_BASE}${path}`;
 
